@@ -1,0 +1,641 @@
+% ============================================================================
+% Disaster Alert System (DAS) - Test Documentation Report
+% Reference: IEEE 829 Test Documentation Standard
+% Reference: ISO/IEC/IEEE 29119 Software Testing
+% ============================================================================
+
+\documentclass[12pt,a4paper]{article}
+
+% ============================================================================
+% PACKAGES
+% ============================================================================
+\usepackage[margin=1in]{geometry}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage[style=ieee,backend=biber]{biblatex}
+\usepackage{tocloft}
+
+% ============================================================================
+% CONFIGURATION
+% ============================================================================
+
+% Hyperref setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,
+    urlcolor=cyan,
+    pdftitle={DAS Test Documentation},
+    pdfauthor={DAS Development Team},
+}
+
+% Code listing style
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{pythonstyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+    language=Python,
+}
+
+\lstset{style=pythonstyle}
+
+% Headers and footers
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{DAS Test Documentation}
+\lhead{Assignment 1 - Group 17}
+\rfoot{Page \thepage}
+
+% ============================================================================
+% DOCUMENT
+% ============================================================================
+
+\begin{document}
+
+% ----------------------------------------------------------------------------
+% TITLE PAGE
+% ----------------------------------------------------------------------------
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    
+    {\Huge\bfseries Disaster Alert System (DAS)\\[0.5cm]}
+    {\LARGE Test Documentation Report\\[2cm]}
+    
+    \vfill
+    
+    {\Large\bfseries Assignment 1: Collaborative Software Development\\[0.5cm]}
+    {\large Group 17\\[2cm]}
+    
+    \begin{tabular}{ll}
+        \textbf{Course:} & Software Engineering (Semester 6) \\
+        \textbf{Date:} & \today \\
+        \textbf{Version:} & 1.0.0 \\
+    \end{tabular}
+    
+    \vfill
+    
+    {\small Reference Standards: IEEE 829, ISO/IEC/IEEE 29119, ISTQB}
+    
+\end{titlepage}
+
+% ----------------------------------------------------------------------------
+% TABLE OF CONTENTS
+% ----------------------------------------------------------------------------
+\tableofcontents
+\newpage
+
+% ----------------------------------------------------------------------------
+% EXECUTIVE SUMMARY
+% ----------------------------------------------------------------------------
+\section{Executive Summary}
+
+This document presents a comprehensive test documentation for the \textbf{Disaster Alert System (DAS)}, a mission-critical platform designed to detect and disseminate alerts for natural disasters including earthquakes, tsunamis, floods, and cyclones.
+
+\subsection{Project Objectives}
+\begin{itemize}
+    \item Develop a robust testing framework covering functional, integration, stress, and boundary value analysis
+    \item Implement Risk-Based Testing (RBT) for safety-critical failure modes
+    \item Create an automated evaluation framework with industry-standard metrics
+    \item Ensure compliance with IEEE 829 and ISO/IEC/IEEE 29119 standards
+\end{itemize}
+
+\subsection{Key Metrics Summary}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lcc}
+\toprule
+\textbf{Metric} & \textbf{Target} & \textbf{Threshold (PROD\_READY)} \\
+\midrule
+Total Test Cases & 50+ & -- \\
+Test Success Rate & $\geq 95\%$ & $\geq 95\%$ \\
+Code Coverage & $\geq 80\%$ & $\geq 80\%$ \\
+Defect Density & $\leq 0.05$ & $\leq 0.05$ \\
+\bottomrule
+\end{tabular}
+\caption{Evaluation Metrics Summary}
+\end{table}
+
+\subsection{Verification vs. Validation}
+
+\begin{description}
+    \item[Verification:] ``Did we build the system right?'' \\
+    Our test suite verifies that the DAS implementation correctly follows the specification requirements, including alert thresholds, severity classification, and notification delivery.
+    
+    \item[Validation:] ``Did we build the right system?'' \\
+    Risk-Based Testing (RBT) validates that the system will function correctly during actual disaster scenarios, including network failures, database corruption, and high-load conditions.
+\end{description}
+
+% ----------------------------------------------------------------------------
+% TEST METHODOLOGY
+% ----------------------------------------------------------------------------
+\section{Test Methodology}
+\label{sec:methodology}
+
+\subsection{Reference Standards}
+
+Our testing methodology is based on internationally recognized standards:
+
+\begin{description}
+    \item[IEEE 829-2008] Standard for Software and System Test Documentation. Defines the format for test plans, test cases, and test reports.
+    
+    \item[ISO/IEC/IEEE 29119] Software and Systems Engineering --- Software Testing. Provides a comprehensive framework for test processes, techniques, and documentation.
+    
+    \item[ISTQB Foundation Level] International Software Testing Qualifications Board. Establishes best practices for test design techniques including boundary value analysis.
+\end{description}
+
+\subsection{Test Design Techniques}
+
+\subsubsection{Equivalence Partitioning}
+Input domain is divided into equivalence classes:
+\begin{itemize}
+    \item Valid inputs above threshold (trigger alert)
+    \item Valid inputs below threshold (no alert)
+    \item Invalid inputs (negative values, empty locations)
+\end{itemize}
+
+\subsubsection{Boundary Value Analysis}
+Testing at exact boundary points for each threshold:
+\begin{align}
+    \text{Test Points} &= \{T - \epsilon, T, T + \epsilon\}
+\end{align}
+Where $T$ is the threshold and $\epsilon$ is a small delta (typically 0.01).
+
+\subsubsection{Risk-Based Testing}
+For mission-critical systems, tests are prioritized by risk:
+\begin{equation}
+    \text{Risk Priority} = \text{Likelihood} \times \text{Impact}
+\end{equation}
+
+\subsection{Test Categories}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{Category} & \textbf{Purpose} & \textbf{Test IDs} \\
+\midrule
+Functional & Core logic verification & FT-001 to FT-013 \\
+Boundary & Edge case validation & BVA-001 to BVA-015 \\
+Integration & End-to-end flows & IT-001 to IT-006 \\
+Stress & Performance under load & ST-001 to ST-006 \\
+Safety & Failure mode handling & RBT-001 to RBT-009 \\
+\bottomrule
+\end{tabular}
+\caption{Test Categories Overview}
+\end{table}
+
+% ----------------------------------------------------------------------------
+% RISK MATRIX
+% ----------------------------------------------------------------------------
+\section{Risk Matrix}
+\label{sec:risk}
+
+\subsection{Risk Assessment Methodology}
+
+Risk levels are categorized according to ISO 22324 (Societal Security):
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ccccc}
+\toprule
+& \multicolumn{4}{c}{\textbf{Impact}} \\
+\textbf{Likelihood} & Minor & Major & Critical & Catastrophic \\
+\midrule
+High & Medium & High & Critical & Critical \\
+Medium & Low & Medium & High & Critical \\
+Low & Low & Low & Medium & High \\
+\bottomrule
+\end{tabular}
+\caption{Risk Priority Matrix}
+\end{table}
+
+\subsection{Identified Risks}
+
+\begin{longtable}{p{2cm}p{4cm}p{2cm}p{2cm}p{3cm}}
+\toprule
+\textbf{Risk ID} & \textbf{Description} & \textbf{Impact} & \textbf{Priority} & \textbf{Mitigation} \\
+\midrule
+\endhead
+
+RISK-001 & SMS gateway fails during Tsunami alert & Catastrophic & Critical & Retry logic, email fallback \\
+RISK-002 & Database corruption during ongoing disaster & Critical & Critical & Cache fallback mechanism \\
+RISK-003 & Network latency delays notifications & Major & High & Timeout handling, async queues \\
+RISK-004 & Burst of 100+ simultaneous alerts & Major & High & Concurrent processing, thread safety \\
+RISK-005 & Invalid sensor data triggers false alert & Major & Medium & Input validation, threshold review \\
+\bottomrule
+\caption{Risk Register}
+\end{longtable}
+
+% ----------------------------------------------------------------------------
+% TEST CASE TABLES
+% ----------------------------------------------------------------------------
+\section{Detailed Test Cases}
+\label{sec:testcases}
+
+\subsection{Functional Tests}
+
+\begin{longtable}{p{1.5cm}p{1cm}p{4cm}p{3cm}p{3.5cm}}
+\toprule
+\textbf{Test ID} & \textbf{Pri.} & \textbf{Description} & \textbf{Input} & \textbf{Expected Result} \\
+\midrule
+\endhead
+
+FT-001 & P1 & Earthquake alert triggers above threshold & Magnitude: 6.5, Location: Tokyo & Alert generated, Severity: HIGH+ \\
+FT-002 & P1 & No alert below threshold & Magnitude: 4.5 & No alert generated \\
+FT-003 & P1 & Tsunami critical severity & Wave height: 12.0m & Severity: CRITICAL/CATASTROPHIC \\
+FT-004 & P2 & Flood alert generation & Water level: 5.5m & Alert with severity HIGH \\
+FT-005 & P2 & Cyclone alert generation & Wind: 200 km/h & Alert with severity HIGH \\
+FT-006 & P2 & Severity LOW classification & Magnitude: 3.5 & Severity: LOW \\
+FT-007 & P1 & Severity CATASTROPHIC classification & Magnitude: 9.0 & Severity: CATASTROPHIC \\
+FT-008 & P2 & All earthquake severity levels & Various magnitudes & Correct classification \\
+FT-009 & P2 & Acknowledge alert & Valid alert ID & acknowledged = True \\
+FT-010 & P3 & Acknowledge non-existent & Invalid ID & Returns False \\
+FT-011 & P1 & Callback invoked on alert & Registered callback & Callback called \\
+FT-012 & P2 & Multiple callbacks & 2 callbacks & Both invoked \\
+FT-013 & P3 & Statistics calculation & 3 alerts & Accurate counts \\
+\bottomrule
+\caption{Functional Test Cases}
+\end{longtable}
+
+\subsection{Boundary Value Analysis Tests}
+
+\begin{longtable}{p{1.5cm}p{1cm}p{4cm}p{2.5cm}p{3.5cm}}
+\toprule
+\textbf{Test ID} & \textbf{Pri.} & \textbf{Description} & \textbf{Input} & \textbf{Expected Result} \\
+\midrule
+\endhead
+
+BVA-001 & P1 & Earthquake just below threshold & 4.99 & No alert \\
+BVA-002 & P1 & Earthquake exactly at threshold & 5.0 & Alert triggered \\
+BVA-003 & P1 & Earthquake just above threshold & 5.01 & Alert triggered \\
+BVA-004 & P2 & Earthquake zero value & 0 & No alert (valid input) \\
+BVA-005 & P1 & Negative magnitude (invalid) & -1.0 & No alert, graceful handling \\
+BVA-006 & P2 & Maximum Richter value & 10.0 & CATASTROPHIC severity \\
+BVA-007 & P3 & Beyond maximum (edge case) & 12.0 & System handles gracefully \\
+BVA-008 & P1 & Tsunami threshold boundaries & 1.99, 2.0, 2.01 & Correct trigger behavior \\
+BVA-009 & P1 & Flood threshold boundaries & 2.99, 3.0, 3.01 & Correct trigger behavior \\
+BVA-010 & P1 & Cyclone threshold boundaries & 119.9, 120.0, 120.1 & Correct trigger behavior \\
+BVA-011 & P1 & Empty location string & "" & No alert (invalid input) \\
+BVA-012 & P2 & Whitespace-only location & "   " & No alert \\
+BVA-013 & P3 & Location with extra spaces & "  Tokyo  " & Alert with trimmed location \\
+BVA-014 & P2 & Phone number length boundaries & Various lengths & Correct validation \\
+BVA-015 & P2 & Email format boundaries & Various formats & Correct validation \\
+\bottomrule
+\caption{Boundary Value Analysis Test Cases}
+\end{longtable}
+
+\subsection{Risk-Based Safety Tests}
+
+\begin{longtable}{p{1.5cm}p{1cm}p{4cm}p{2.5cm}p{3.5cm}}
+\toprule
+\textbf{Test ID} & \textbf{Risk} & \textbf{Failure Scenario} & \textbf{Precondition} & \textbf{Expected Behavior} \\
+\midrule
+\endhead
+
+RBT-001 & CATA & SMS gateway fails during alert & Network failure enabled & SERVICE\_UNAVAILABLE, no crash \\
+RBT-002 & CRIT & Email gateway fails & Network failure enabled & Graceful failure handling \\
+RBT-003 & CATA & Notification retry exhausted & All retries fail & System continues operating \\
+RBT-004 & CRIT & Database corruption fallback & DB corruption enabled & Falls back to cache \\
+RBT-005 & CATA & No cache during corruption & No cache file & Graceful handling \\
+RBT-006 & MAJOR & High latency impact & 100ms latency & Slower but successful \\
+RBT-007 & CATA & Alert manager isolation & Gateway down & Alerts still recorded \\
+RBT-008 & CATA & Multi-component recovery & Failure then recovery & System recovers \\
+RBT-009 & CRIT & Alert data preservation & Notification fails & Alert record preserved \\
+\bottomrule
+\caption{Risk-Based Safety Test Cases}
+\end{longtable}
+
+% ----------------------------------------------------------------------------
+% CODE LISTINGS
+% ----------------------------------------------------------------------------
+\section{Code Listings}
+\label{sec:code}
+
+\subsection{Alert Manager - Severity Classification}
+
+\begin{lstlisting}[caption={Severity Level Classification Logic}]
+class SeverityLevel(Enum):
+    LOW = 1
+    MEDIUM = 2
+    HIGH = 3
+    CRITICAL = 4
+    CATASTROPHIC = 5  # Reserved for life-threatening scenarios
+    
+    @classmethod
+    def from_value(cls, value: float, disaster_type: DisasterType) -> 'SeverityLevel':
+        """
+        Determine severity based on sensor value and disaster type.
+        Uses Risk-Based Testing (RBT) principles.
+        """
+        thresholds = {
+            DisasterType.EARTHQUAKE: [
+                (3.0, cls.LOW), (5.0, cls.MEDIUM), 
+                (6.5, cls.HIGH), (7.5, cls.CRITICAL), 
+                (8.5, cls.CATASTROPHIC)
+            ],
+            DisasterType.TSUNAMI: [
+                (0.5, cls.LOW), (2.0, cls.MEDIUM), 
+                (5.0, cls.HIGH), (10.0, cls.CRITICAL), 
+                (15.0, cls.CATASTROPHIC)
+            ],
+        }
+        
+        type_thresholds = thresholds.get(disaster_type, [])
+        for threshold, severity in reversed(type_thresholds):
+            if value >= threshold:
+                return severity
+        return cls.LOW
+\end{lstlisting}
+
+\subsection{Evaluator - Metrics Calculation}
+
+\begin{lstlisting}[caption={Test Metrics Calculation}]
+def calculate_metrics(self, results: List[TestResult], coverage: float) -> EvaluationMetrics:
+    """Calculate all evaluation metrics."""
+    total = len(results)
+    passed = sum(1 for r in results if r.status == "passed")
+    failed = sum(1 for r in results if r.status == "failed")
+    skipped = sum(1 for r in results if r.status == "skipped")
+    errors = sum(1 for r in results if r.status == "error")
+    
+    # Success rate (excluding skipped)
+    executed = total - skipped
+    success_rate = (passed / executed * 100) if executed > 0 else 0.0
+    
+    # Defect density = failed tests / total tests
+    defect_density = (failed + errors) / total if total > 0 else 0.0
+    
+    # Determine status
+    status = self._determine_status(success_rate, coverage, defect_density)
+    
+    return EvaluationMetrics(
+        total_tests=total,
+        passed=passed,
+        failed=failed,
+        success_rate=round(success_rate, 2),
+        code_coverage=round(coverage, 2),
+        defect_density=round(defect_density, 4),
+        status=status
+    )
+\end{lstlisting}
+
+\subsection{Test Example - Boundary Value Analysis}
+
+\begin{lstlisting}[caption={Boundary Value Test for Earthquake Threshold}]
+@pytest.mark.parametrize("magnitude,should_alert", [
+    (4.99, False),  # Just below threshold
+    (5.0, True),    # Exactly at threshold
+    (5.01, True),   # Just above threshold
+    (0.0, False),   # Minimum valid
+    (-1.0, False),  # Invalid negative
+    (12.0, True),   # Extreme value
+])
+def test_bva008_earthquake_boundaries(self, alert_manager, magnitude, should_alert):
+    """
+    Test ID: BVA-008
+    Tests all boundary points for earthquake threshold (5.0)
+    """
+    alert = alert_manager.process_sensor_data(
+        disaster_type=DisasterType.EARTHQUAKE,
+        sensor_value=magnitude,
+        location="Test Location"
+    )
+    if should_alert:
+        assert alert is not None
+    else:
+        assert alert is None
+\end{lstlisting}
+
+% ----------------------------------------------------------------------------
+% EVALUATION RESULTS
+% ----------------------------------------------------------------------------
+\section{Evaluation Results}
+\label{sec:results}
+
+\subsection{Metrics Formula}
+
+The evaluation framework calculates the following metrics:
+
+\subsubsection{Test Success Rate}
+\begin{equation}
+    \text{Success Rate} = \frac{\text{Passed Tests}}{\text{Total Tests} - \text{Skipped Tests}} \times 100\%
+\end{equation}
+
+\subsubsection{Defect Density}
+\begin{equation}
+    \text{Defect Density} = \frac{\text{Failed Tests} + \text{Error Tests}}{\text{Total Tests}}
+\end{equation}
+
+\subsubsection{Code Coverage}
+\begin{equation}
+    \text{Coverage} = \frac{\text{Lines Executed}}{\text{Total Lines}} \times 100\%
+\end{equation}
+
+\subsection{Status Determination}
+
+The system status is determined by the following criteria:
+
+\textbf{PROD\_READY:}
+\begin{align}
+    &\text{Success Rate} \geq 95\% \\
+    &\text{Code Coverage} \geq 80\% \\
+    &\text{Defect Density} \leq 0.05
+\end{align}
+
+\textbf{STABLE:}
+\begin{align}
+    &\text{Success Rate} \geq 85\% \\
+    &\text{Code Coverage} \geq 60\% \\
+    &\text{Defect Density} \leq 0.15
+\end{align}
+
+\textbf{CRITICAL\_FAILURE:} Any metric below STABLE thresholds.
+
+\subsection{Sample Evaluation Output}
+
+\begin{verbatim}
+============================================================
+EVALUATION REPORT
+============================================================
+Generated: 2026-01-20T11:50:21
+
+STATUS: ✅ PROD_READY ✅
+
+----------------------------------------
+METRICS SUMMARY
+----------------------------------------
+  Total Tests:       50
+  Passed:            48
+  Failed:            1
+  Errors:            0
+  Skipped:           1
+  Success Rate:      97.96%
+  Code Coverage:     82.5%
+  Defect Density:    0.02
+  Execution Time:    4.532s
+
+============================================================
+\end{verbatim}
+
+% ----------------------------------------------------------------------------
+% CI/CD INTEGRATION
+% ----------------------------------------------------------------------------
+\section{CI/CD Integration}
+\label{sec:cicd}
+
+\subsection{Pipeline Architecture}
+
+The GitHub Actions workflow implements a staged testing approach:
+
+\begin{enumerate}
+    \item \textbf{Functional Tests} - Core logic validation (must pass)
+    \item \textbf{Integration Tests} - End-to-end flows (after functional)
+    \item \textbf{Safety Tests} - Risk-based scenarios (parallel)
+    \item \textbf{Stress Tests} - Performance (main branch only)
+    \item \textbf{Evaluation} - Generate metrics report
+    \item \textbf{Quality Gate} - Block deployment if CRITICAL\_FAILURE
+\end{enumerate}
+
+\subsection{Quality Gate}
+
+The quality gate prevents deployment of code that fails to meet minimum standards:
+
+\begin{lstlisting}[language=bash,caption={Quality Gate Check}]
+STATUS=$(cat reports/evaluation.json | python -c \
+    'import json,sys; print(json.load(sys.stdin)["status"])')
+
+if [ "$STATUS" == "CRITICAL_FAILURE" ]; then
+    echo "Quality Gate FAILED"
+    exit 1
+fi
+\end{lstlisting}
+
+% ----------------------------------------------------------------------------
+% BIBLIOGRAPHY
+% ----------------------------------------------------------------------------
+\section{References and Bibliography}
+\label{sec:references}
+
+\subsection{Standards}
+
+\begin{enumerate}
+    \item IEEE 829-2008, ``IEEE Standard for Software and System Test Documentation''
+    
+    \item ISO/IEC/IEEE 29119-1:2022, ``Software and systems engineering --- Software testing --- Part 1: General concepts''
+    
+    \item ISO/IEC/IEEE 29119-2:2021, ``Software and systems engineering --- Software testing --- Part 2: Test processes''
+    
+    \item ISO/IEC/IEEE 29119-3:2021, ``Software and systems engineering --- Software testing --- Part 3: Test documentation''
+    
+    \item ISO/IEC/IEEE 29119-4:2021, ``Software and systems engineering --- Software testing --- Part 4: Test techniques''
+    
+    \item ISO 22324:2015, ``Societal security --- Emergency management --- Guidelines for colour-coded alerts''
+    
+    \item ISTQB Foundation Level Syllabus, Version 4.0, 2023
+\end{enumerate}
+
+\subsection{Justification for Methodology}
+
+The testing methodology employed in this project follows industry best practices for mission-critical systems:
+
+\begin{description}
+    \item[Risk-Based Testing:] Essential for disaster alert systems where failure can result in loss of life. Prioritizes tests based on risk impact (ISO/IEC/IEEE 29119-4).
+    
+    \item[Boundary Value Analysis:] Critical for threshold-based systems. Ensures alerts trigger correctly at exact boundaries (ISTQB Foundation).
+    
+    \item[Failure Mode Simulation:] Validates system resilience during partial outages, which is common during actual disasters when infrastructure is compromised.
+    
+    \item[Automated Evaluation:] Provides objective, repeatable metrics for quality assessment, essential for CI/CD integration.
+\end{description}
+
+% ----------------------------------------------------------------------------
+% APPENDIX
+% ----------------------------------------------------------------------------
+\appendix
+
+\section{Test Execution Commands}
+
+\begin{lstlisting}[language=bash]
+# Install dependencies
+pip install -r requirements.txt
+
+# Run all tests with coverage
+pytest --cov=src --cov-report=html
+
+# Run specific test categories
+pytest tests/functional -v
+pytest tests/safety -m safety
+pytest tests/stress -m stress
+
+# Run full evaluation
+python tools/evaluator.py
+
+# Generate reports only (no test execution)
+python tools/evaluator.py --no-run
+\end{lstlisting}
+
+\section{Project Structure}
+
+\begin{verbatim}
+DAS_Project/
+├── src/
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── logger.py
+│   │   └── config.py
+│   ├── alerts/
+│   │   ├── __init__.py
+│   │   └── alert_manager.py
+│   ├── api/
+│   │   ├── __init__.py
+│   │   └── messaging.py
+│   └── db/
+│       ├── __init__.py
+│       └── storage.py
+├── tests/
+│   ├── conftest.py
+│   ├── functional/
+│   ├── integration/
+│   ├── boundary/
+│   ├── stress/
+│   └── safety/
+├── tools/
+│   └── evaluator.py
+├── docs/
+│   ├── latex/
+│   │   └── das_report.tex
+│   └── GIT_WORKFLOW.md
+└── .github/
+    └── workflows/
+        └── main.yml
+\end{verbatim}
+
+\end{document}
