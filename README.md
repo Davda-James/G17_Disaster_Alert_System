@@ -95,7 +95,7 @@ app.config["TWILIO_NUMBER"] = "+1234567890"
 
 ---
 
-## System Architecture: What Happens After `npm run dev`?
+## System Architecture: 
 
 Here is the step-by-step logic flow of the system during operation:
 
