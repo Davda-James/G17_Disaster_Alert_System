@@ -1,0 +1,193 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@layer base {
+  :root {
+    /* Disaster Management Dark Theme */
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 10%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 199 89% 48%;
+    --primary-foreground: 222 47% 6%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 199 89% 48%;
+    --accent-foreground: 222 47% 6%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 20%;
+    --input: 217 33% 20%;
+    --ring: 199 89% 48%;
+
+    --radius: 0.75rem;
+
+    /* Severity Colors */
+    --severity-critical: 0 84% 60%;
+    --severity-high: 25 95% 53%;
+    --severity-medium: 48 96% 53%;
+    --severity-low: 142 71% 45%;
+
+    /* Globe & Effects */
+    --globe-glow: 199 89% 48%;
+    --alert-pulse: 0 84% 60%;
+
+    --sidebar-background: 222 47% 8%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 199 89% 48%;
+    --sidebar-primary-foreground: 222 47% 6%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 20%;
+    --sidebar-ring: 199 89% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer components {
+  /* Severity Badge Variants */
+  .severity-critical {
+    @apply bg-red-500/20 text-red-400 border-red-500/50;
+  }
+  
+  .severity-high {
+    @apply bg-orange-500/20 text-orange-400 border-orange-500/50;
+  }
+  
+  .severity-medium {
+    @apply bg-yellow-500/20 text-yellow-400 border-yellow-500/50;
+  }
+  
+  .severity-low {
+    @apply bg-green-500/20 text-green-400 border-green-500/50;
+  }
+
+  /* Glow Effects */
+  .glow-primary {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3),
+                0 0 40px hsl(var(--primary) / 0.2),
+                0 0 60px hsl(var(--primary) / 0.1);
+  }
+
+  .glow-alert {
+    box-shadow: 0 0 20px hsl(var(--severity-critical) / 0.4),
+                0 0 40px hsl(var(--severity-critical) / 0.2);
+  }
+
+  /* Glass Effect */
+  .glass {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50;
+  }
+
+  .glass-strong {
+    @apply bg-card/95 backdrop-blur-2xl border border-border/50;
+  }
+
+  /* Alert Flash Animation */
+  .alert-flash {
+    animation: alertFlash 2s ease-out;
+  }
+
+  @keyframes alertFlash {
+    0%, 20%, 40% {
+      box-shadow: 0 0 30px hsl(var(--severity-critical) / 0.8),
+                  0 0 60px hsl(var(--severity-critical) / 0.4);
+    }
+    10%, 30%, 50% {
+      box-shadow: 0 0 10px hsl(var(--severity-critical) / 0.2);
+    }
+    100% {
+      box-shadow: none;
+    }
+  }
+
+  /* Globe Container */
+  .globe-container {
+    @apply relative overflow-hidden;
+    background: radial-gradient(ellipse at center, 
+      hsl(var(--primary) / 0.1) 0%, 
+      transparent 70%);
+  }
+
+  /* Gradient Text */
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-cyan-400 to-blue-400;
+  }
+
+  /* Hero Gradient */
+  .hero-gradient {
+    background: radial-gradient(ellipse 80% 50% at 50% -20%, 
+      hsl(var(--primary) / 0.3) 0%, 
+      transparent 50%),
+      linear-gradient(to bottom, 
+        hsl(222 47% 6%) 0%, 
+        hsl(222 47% 4%) 100%);
+  }
+
+  /* Input Focus Ring */
+  .input-focus {
+    @apply focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200;
+  }
+}
+
+@layer utilities {
+  /* Scrollbar Styling */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted)) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted));
+    border-radius: 3px;
+  }
+
+  /* Pulse Animation for Markers */
+  .pulse-marker {
+    animation: pulseMarker 2s ease-in-out infinite;
+  }
+
+  @keyframes pulseMarker {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.2);
+      opacity: 0.7;
+    }
+  }
+}
