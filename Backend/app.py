@@ -10,6 +10,8 @@ from datetime import timedelta
 import requests
 from twilio.rest import Client
 from twilio.base.exceptions import TwilioRestException
+import smtplib
+from email.message import EmailMessage
 
 app = Flask(__name__)
 
@@ -21,7 +23,15 @@ app.config["JWT_ACCESS_TOKEN_EXPIRES"] = datetime.timedelta(days=7)
 # Twilio Config
 app.config['TWILIO_ACCOUNT_SID'] = ''
 app.config['TWILIO_AUTH_TOKEN'] = ''
-app.config['TWILIO_NUMBER'] = '' 
+app.config['TWILIO_NUMBER'] = ''
+
+# SMTP Config
+app.config['SMTP_HOST'] = ""
+app.config['SMTP_PORT'] = 587
+app.config['SMTP_USER'] = ""
+app.config['SMTP_PASSWORD'] = ""
+app.config['FROM_EMAIL'] = ""
+app.config['SMTP_USE_TLS'] = True
 
 # Logic Constants (Mock Values / Settings)
 CONSTANTS = {
@@ -30,7 +40,8 @@ CONSTANTS = {
     "DUPLICATE_TIME_WINDOW_HOURS": 12, # Time window to suppress new SMS
     "DEFAULT_LAT": 20.5937,        # Center of India Lat
     "DEFAULT_LNG": 78.9629,        # Center of India Lng
-    "USER_AGENT": "DisasterWatchApp/1.0"
+    "USER_AGENT": "DisasterWatchApp/1.0",
+    "MAX_ROUNDS": 5
 }
 
 mongo = PyMongo(app)
@@ -131,31 +142,162 @@ def should_trigger_sms(new_alert_coords):
         print(f"Error in suppression logic: {e}")
         return True # Fail-safe: Send SMS if check fails
 
+def should_trigger_email(new_alert_coords):
+    """
+    Returns True if an email should be sent for an alert at `new_alert_coords`.
+    Suppresses sending when a recent alert (within DUPLICATE_TIME_WINDOW_HOURS)
+    that already had email_sent=True exists within DUPLICATE_CHECK_RADIUS_KM.
+    """
+    try:
+        alerts_collection = mongo.db.alerts
+        time_threshold = datetime.datetime.utcnow() - timedelta(hours=CONSTANTS["DUPLICATE_TIME_WINDOW_HOURS"])
+
+        # Only consider alerts that previously had emails actually sent
+        recent_email_alerts = alerts_collection.find({
+            "timestamp": {"$gte": time_threshold},
+            "email_sent": True
+        })
+
+        new_point = (new_alert_coords['lat'], new_alert_coords['lng'])
+
+        for existing_alert in recent_email_alerts:
+            existing_coords = existing_alert.get('coordinates')
+            if not existing_coords or 'lat' not in existing_coords or 'lng' not in existing_coords:
+                continue
+
+            existing_point = (existing_coords['lat'], existing_coords['lng'])
+            distance_km = geodesic(new_point, existing_point).km
+
+            if distance_km <= CONSTANTS["DUPLICATE_CHECK_RADIUS_KM"]:
+                print(f" Email Suppressed: Similar alert found {distance_km:.2f} km away.")
+                return False
+
+        return True
+
+    except Exception as e:
+        # Fail-safe: if suppression check fails, allow sending (avoid silent missed alerts)
+        print(f"Error in email suppression logic: {e}")
+        return True
+
+
 def broadcast_sms_to_users(alert_data):
     """Iterates users and sends SMS if within radius."""
+    
     try:
-        users = mongo.db.users.find({})
-        count = 0
+        # 1. Fetch all users
+        # Convert cursor to list immediately to avoid cursor exhaustion issues
+        all_users = list(mongo.db.users.find({}))
+        
         alert_point = (alert_data['coordinates']['lat'], alert_data['coordinates']['lng'])
-
-        for user in users:
+        
+        # 2. FILTER FIRST: Identify who actually needs the SMS
+        # This saves CPU by doing the math only once per user
+        recipients = []
+        for user in all_users:
             user_loc = user.get('location', {})
             user_coords = user_loc.get('coordinates')
             
             if user_coords and 'lat' in user_coords:
                 user_point = (user_coords['lat'], user_coords['lng'])
-                
-                # Check User Radius
                 if geodesic(alert_point, user_point).km <= CONSTANTS["SMS_RADIUS_KM"]:
-                    phone = user.get("phone")
-                    if phone:
-                        send_twilio_sms(phone, alert_data['title'], alert_data['message'])
-                        count += 1
+                    if user.get("phone"):
+                        recipients.append(user)
+
+        curr_round = 0
+        users_to_process = recipients 
+        success_count = 0
+
+        while curr_round < CONSTANTS["MAX_ROUNDS"] and len(users_to_process) > 0:
+          
+            
+            failed_in_this_round = [] 
+            for user in users_to_process:
+                phone = user.get("phone")
+                
+                # Send SMS
+                response = send_twilio_sms(phone, alert_data['title'], alert_data['message'])
+                
+                if response['status'] == 'success':
+                    success_count += 1
+                else:
+                    
+                    failed_in_this_round.append(user)
+            users_to_process = failed_in_this_round
+            curr_round += 1
         
-        print(f" SMS Broadcast Complete: Sent to {count} users.")
+        print(f" SMS Broadcast Complete: Sent to {success_count} users.")
         return True
     except Exception as e:
         print(f" SMS Broadcast Failed: {e}")
+        return False
+    
+def broadcast_email_to_users(alert_data):
+    """Iterate users and send email alerts to those within radius and who opted-in."""
+    try:
+        all_users = list(mongo.db.users.find({}))
+        alert_point = (alert_data['coordinates']['lat'], alert_data['coordinates']['lng'])
+
+        # 1) Build recipient list (respect user notification preferences)
+        recipients = []
+        for user in all_users:
+            prefs = user.get("notificationPreferences", {})
+            # Skip if user opted out of email
+            if prefs.get("email") is False:
+                continue
+
+            user_loc = user.get("location", {})
+            user_coords = user_loc.get("coordinates")
+            if user_coords and 'lat' in user_coords:
+                user_point = (user_coords['lat'], user_coords['lng'])
+                if geodesic(alert_point, user_point).km <= CONSTANTS["SMS_RADIUS_KM"]:
+                    if user.get("email"):
+                        recipients.append(user)
+
+        # 2) Retry loop (same logic as broadcast_sms_to_users)
+        curr_round = 0
+        users_to_process = recipients
+        success_count = 0
+
+        while curr_round < CONSTANTS["MAX_ROUNDS"] and len(users_to_process) > 0:
+            failed_in_this_round = []
+            for user in users_to_process:
+                to_email = user.get("email")
+                try:
+                    # Build email
+                    msg = EmailMessage()
+                    msg["Subject"] = f"🚨 {alert_data['title'].upper()} 🚨"
+                    msg["From"] = app.config.get("FROM_EMAIL") or app.config.get("SMTP_USER")
+                    msg["To"] = to_email
+                    body = f"{alert_data.get('message','')}\n\nLocation: {alert_data.get('location')}\n- DisasterWatch Team"
+                    msg.set_content(body)
+
+                    # SMTP send
+                    smtp_host = app.config.get("SMTP_HOST")
+                    smtp_port = int(app.config.get("SMTP_PORT", 587))
+                    smtp_user = app.config.get("SMTP_USER")
+                    smtp_pass = app.config.get("SMTP_PASSWORD")
+                    use_tls = app.config.get("SMTP_USE_TLS", True)
+
+                    with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
+                        if use_tls:
+                            server.starttls()
+                        if smtp_user and smtp_pass:
+                            server.login(smtp_user, smtp_pass)
+                        server.send_message(msg)
+
+                    success_count += 1
+                except Exception as e:
+                    print(f" Email failed for {to_email}: {e}")
+                    failed_in_this_round.append(user)
+
+            users_to_process = failed_in_this_round
+            curr_round += 1
+
+        print(f" Email Broadcast Complete: Sent to {success_count} users.")
+        return True
+
+    except Exception as e:
+        print(f" Email Broadcast Failed: {e}")
         return False
 
 # --- 3. ROUTES ---
@@ -268,7 +410,8 @@ def serialize_alert(doc):
         "status": doc.get("status", "active"),
         # CRITICAL FIX: Convert datetime to ISO string for Frontend
         "timestamp": doc["timestamp"].isoformat() if isinstance(doc.get("timestamp"), datetime.datetime) else str(datetime.datetime.utcnow().isoformat()),
-        "sms_sent": doc.get("sms_sent", False)
+        "sms_sent": doc.get("sms_sent", False),
+        "email_sent": doc.get("email_sent",False)
     }
 
 # ... (rest of your config and earlier functions)
@@ -293,6 +436,7 @@ def create_alert():
         alert_coords = get_coordinates(city, state)
 
     trigger_sms = should_trigger_sms(alert_coords)
+    trigger_email = should_trigger_email(alert_coords)
 
     # 2. Create Alert Object
     new_alert = {
@@ -305,14 +449,18 @@ def create_alert():
         "coordinates": alert_coords,
         "status": "active",
         "timestamp": datetime.datetime.utcnow(),
-        "sms_sent": trigger_sms 
+        "sms_sent": trigger_sms,
+        "email_sent": trigger_email
     }
 
     result = mongo.db.alerts.insert_one(new_alert)
 
-    # 3. Broadcast SMS
+    # 3. Broadcast SMS and email (first sms)
     if trigger_sms:
         broadcast_sms_to_users(new_alert)
+
+    if trigger_email:
+        broadcast_email_to_users(new_alert)
 
     # 4. Fetch the fresh document to return it safely
     saved_alert = mongo.db.alerts.find_one({"_id": result.inserted_id})
