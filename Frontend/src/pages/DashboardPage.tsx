@@ -126,6 +126,9 @@ export default function DashboardPage() {
                 <SelectItem value="flood">Flood</SelectItem>
                 <SelectItem value="fire">Wildfire</SelectItem>
                 <SelectItem value="cyclone">Cyclone</SelectItem>
+                <SelectItem value="tsunami">Tsunami</SelectItem>
+                <SelectItem value="landslide">Landslide</SelectItem>
+                <SelectItem value="volcano">Volcanic Activity</SelectItem>
               </SelectContent>
             </Select>
 

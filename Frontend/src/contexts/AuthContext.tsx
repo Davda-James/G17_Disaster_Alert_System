@@ -47,13 +47,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const API_URL = 'http://localhost:5000/api';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  // Initialize token directly so it's available immediately on reload
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // 1. Check for existing session on refresh
   useEffect(() => {
     const verifyToken = async () => {
-      const token = localStorage.getItem('token');
       if (token) {
         try {
           const response = await fetch(`${API_URL}/me`, {
@@ -64,17 +65,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const data = await response.json();
             setUser(data.user);
           } else {
+            // Token invalid - clear state and storage
             localStorage.removeItem('token');
+            setToken(null); 
+            setUser(null);
           }
         } catch (error) {
           console.error('Session verification failed', error);
           localStorage.removeItem('token');
+          setToken(null);
+          setUser(null);
         }
       }
       setIsLoading(false);
     };
     verifyToken();
-  }, []);
+  }, []); // Run once on mount
 
   // 2. Login
   const login = async (email: string, password: string): Promise<boolean> => {
@@ -89,6 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const data = await response.json();
       localStorage.setItem('token', data.token);
+      setToken(data.token); // FIX: Update token state
       setUser(data.user);
       return true;
     } catch (error) {
@@ -110,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const responseData = await response.json();
       localStorage.setItem('token', responseData.token);
+      setToken(responseData.token); // FIX: Update token state
       setUser(responseData.user);
       return true;
     } catch (error) {
@@ -120,6 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem('token');
+    setToken(null); // FIX: Update token state
     setUser(null);
   };
 
@@ -127,8 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateUser = async (data: Partial<User>) => {
     if (!user) return;
     try {
-      const token = localStorage.getItem('token');
-      // We pass the user ID in the URL, handled by Flask
+      // Use state token instead of reading localStorage again
       const response = await fetch(`${API_URL}/user/${user.id}`, {
         method: 'PUT',
         headers: { 
@@ -150,7 +158,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{ 
       user, 
-      isAuthenticated: !!user, 
+      // FIX: Check 'token' for instant authentication state (prevents reload flicker)
+      isAuthenticated: !!token, 
       isLoading,
       login, 
       signup, 
