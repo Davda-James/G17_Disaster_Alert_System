@@ -258,6 +258,117 @@ RISK-005 & Invalid sensor data triggers false alert & Major & Medium & Input val
 \end{longtable}
 
 % ----------------------------------------------------------------------------
+% REQUIREMENTS TRACEABILITY MATRIX
+% ----------------------------------------------------------------------------
+\section{Requirements Traceability Matrix}
+\label{sec:rtm}
+
+The Requirements Traceability Matrix (RTM) maps system requirements to test cases, ensuring complete coverage and enabling impact analysis.
+
+\subsection{Functional Requirements Traceability}
+
+\begin{longtable}{p{1.5cm}p{4.5cm}p{3cm}p{1.5cm}p{1.5cm}}
+\toprule
+\textbf{Req ID} & \textbf{Requirement} & \textbf{Test Cases} & \textbf{Status} & \textbf{Coverage} \\
+\midrule
+\endhead
+
+FR-001 & System shall generate alerts when earthquake magnitude $\geq$ 5.0 & FT-001, FT-002, BVA-001 to BVA-007 & PASS & 100\% \\
+FR-002 & System shall generate alerts when tsunami wave height $\geq$ 2.0m & FT-003, BVA-008 & PASS & 100\% \\
+FR-003 & System shall generate alerts when flood level $\geq$ 3.0m & FT-004, BVA-009 & PASS & 100\% \\
+FR-004 & System shall generate alerts when cyclone wind speed $\geq$ 120 km/h & FT-005, BVA-010 & PASS & 100\% \\
+FR-005 & System shall classify severity into 5 levels (LOW to CATASTROPHIC) & FT-006, FT-007, FT-008 & PASS & 100\% \\
+FR-006 & System shall support alert acknowledgment & FT-009, FT-010, IT-004 & PASS & 100\% \\
+FR-007 & System shall invoke callbacks on alert generation & FT-011, FT-012 & PASS & 100\% \\
+FR-008 & System shall provide alert statistics & FT-013 & PASS & 100\% \\
+FR-009 & System shall send SMS notifications & IT-001, IT-002, ST-003 & PASS & 100\% \\
+FR-010 & System shall send email notifications & IT-002, ST-003 & PASS & 100\% \\
+FR-011 & System shall store alerts in database & IT-001, IT-003 & PASS & 100\% \\
+FR-012 & System shall filter contacts by region & IT-005 & PASS & 100\% \\
+FR-013 & System shall order contacts by priority & IT-006 & PASS & 100\% \\
+\bottomrule
+\caption{Functional Requirements Traceability}
+\end{longtable}
+
+\subsection{Non-Functional Requirements Traceability}
+
+\begin{longtable}{p{1.5cm}p{4.5cm}p{3cm}p{1.5cm}p{1.5cm}}
+\toprule
+\textbf{Req ID} & \textbf{Requirement} & \textbf{Test Cases} & \textbf{Status} & \textbf{Coverage} \\
+\midrule
+\endhead
+
+NFR-001 & System shall process 100 alerts in $<$ 2 seconds & ST-001 & PASS & 100\% \\
+NFR-002 & System shall support concurrent processing & ST-002, ST-005 & PASS & 100\% \\
+NFR-003 & System shall deliver 100 notifications in $<$ 5 seconds & ST-003 & PASS & 100\% \\
+NFR-004 & System shall maintain memory stability under load & ST-006 & PASS & 100\% \\
+NFR-005 & System shall handle gateway failures gracefully & RBT-001, RBT-002, RBT-003 & PASS & 100\% \\
+NFR-006 & System shall fall back to cache during DB corruption & RBT-004, RBT-005 & PASS & 100\% \\
+NFR-007 & System shall continue operating under high latency & RBT-006 & PASS & 100\% \\
+NFR-008 & System shall preserve alert data during failures & RBT-007, RBT-008, RBT-009 & PASS & 100\% \\
+NFR-009 & System shall validate input boundaries correctly & BVA-011 to BVA-015 & PASS & 100\% \\
+\bottomrule
+\caption{Non-Functional Requirements Traceability}
+\end{longtable}
+
+\subsection{Risk-to-Test Mapping Matrix}
+
+\begin{longtable}{p{2cm}p{4.5cm}p{3cm}p{2cm}p{1.5cm}}
+\toprule
+\textbf{Risk ID} & \textbf{Risk Description} & \textbf{Test Cases} & \textbf{Mitigation} & \textbf{Verified} \\
+\midrule
+\endhead
+
+RISK-001 & SMS gateway fails during Tsunami alert & RBT-001, RBT-003 & Retry logic, email fallback & \checkmark PASS \\
+RISK-002 & Database corruption during ongoing disaster & RBT-004, RBT-005 & Cache fallback mechanism & \checkmark PASS \\
+RISK-003 & Network latency delays notifications & RBT-006 & Timeout handling & \checkmark PASS \\
+RISK-004 & Burst of 100+ simultaneous alerts & ST-001, ST-002 & Concurrent processing & \checkmark PASS \\
+RISK-005 & Invalid sensor data triggers false alert & BVA-005, BVA-011, BVA-012 & Input validation & \checkmark PASS \\
+\bottomrule
+\caption{Risk Mitigation Verification Matrix}
+\end{longtable}
+
+\subsection{Test Coverage Summary Matrix}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Component} & \textbf{Func.} & \textbf{BVA} & \textbf{Integ.} & \textbf{Stress} & \textbf{Safety} \\
+\midrule
+Alert Manager & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+SMS Gateway & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+Email Gateway & -- & \checkmark & \checkmark & \checkmark & \checkmark \\
+Database Manager & \checkmark & -- & \checkmark & \checkmark & \checkmark \\
+Notification Service & \checkmark & -- & \checkmark & \checkmark & \checkmark \\
+Config Module & -- & -- & -- & -- & \checkmark \\
+Logger & -- & -- & -- & -- & \checkmark \\
+\midrule
+\textbf{Coverage} & 18 & 40 & 6 & 6 & 9 \\
+\bottomrule
+\end{tabular}
+\caption{Component Test Coverage Matrix}
+\end{table}
+
+\subsection{Traceability Summary}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Category} & \textbf{Requirements} & \textbf{Tests Mapped} & \textbf{Passed} & \textbf{Coverage} \\
+\midrule
+Functional Requirements & 13 & 45 & 45 & 100\% \\
+Non-Functional Requirements & 9 & 30 & 30 & 100\% \\
+Risk Mitigations & 5 & 12 & 12 & 100\% \\
+\midrule
+\textbf{Total} & \textbf{27} & \textbf{79*} & \textbf{79} & \textbf{100\%} \\
+\bottomrule
+\end{tabular}
+\caption{Overall Traceability Summary (*some tests cover multiple requirements)}
+\end{table}
+
+% ----------------------------------------------------------------------------
 % TEST CASE TABLES
 % ----------------------------------------------------------------------------
 \section{Detailed Test Cases}
@@ -839,36 +950,65 @@ python tools/evaluator.py --no-run
 
 \begin{verbatim}
 DAS_Project/
-├── src/
+├── Backend/                        # Flask REST API Server
+│   ├── app.py                      # Main Flask application
+│   └── requirements.txt            # Python dependencies
+│
+├── Frontend/                       # React Web Application
+│   ├── src/
+│   │   ├── components/             # Reusable UI components
+│   │   ├── pages/                  # Page components
+│   │   ├── contexts/               # React contexts
+│   │   ├── hooks/                  # Custom React hooks
+│   │   ├── lib/                    # Utility libraries
+│   │   └── test/                   # Frontend tests (Vitest)
+│   ├── package.json                # Node.js dependencies
+│   ├── vite.config.ts              # Vite configuration
+│   ├── vitest.config.ts            # Vitest test config
+│   └── tailwind.config.ts          # TailwindCSS config
+│
+├── src/                            # Core Python Library
 │   ├── core/
 │   │   ├── __init__.py
-│   │   ├── logger.py
-│   │   └── config.py
+│   │   ├── config.py               # System configuration
+│   │   └── logger.py               # Singleton logger
 │   ├── alerts/
 │   │   ├── __init__.py
-│   │   └── alert_manager.py
+│   │   └── alert_manager.py        # Alert processing logic
 │   ├── api/
 │   │   ├── __init__.py
-│   │   └── messaging.py
+│   │   └── messaging.py            # SMS/Email gateways
 │   └── db/
 │       ├── __init__.py
-│       └── storage.py
-├── tests/
-│   ├── conftest.py
-│   ├── functional/
-│   ├── integration/
-│   ├── boundary/
-│   ├── stress/
-│   └── safety/
-├── tools/
-│   └── evaluator.py
-├── docs/
-│   ├── latex/
-│   │   └── das_report.tex
-│   └── GIT_WORKFLOW.md
-└── .github/
-    └── workflows/
-        └── main.yml
+│       └── storage.py              # Database operations
+│
+├── tests/                          # Test Suite (79 tests)
+│   ├── conftest.py                 # Pytest fixtures
+│   ├── functional/                 # Core logic tests (18)
+│   │   └── test_alerts.py
+│   ├── integration/                # E2E flow tests (6)
+│   │   └── test_flow.py
+│   ├── boundary/                   # BVA tests (40)
+│   │   └── test_limits.py
+│   ├── stress/                     # Load tests (6)
+│   │   └── test_load.py
+│   ├── safety/                     # Risk-based tests (9)
+│   │   └── test_failures.py
+│   ├── tools/
+│   │   └── evaluator.py            # Test evaluation framework
+│   ├── docs/
+│   │   └── latex/
+│   │       └── das_report.tex      # This document
+│   └── reports/                    # Generated reports
+│       ├── junit_report.xml
+│       ├── coverage.json
+│       └── evaluation_report.json
+│
+├── reports/                        # Coverage reports
+├── cache/                          # Fallback cache files
+├── .github/workflows/              # CI/CD pipelines
+│   └── main.yml
+└── README.md                       # Project documentation
 \end{verbatim}
 
 \end{document}

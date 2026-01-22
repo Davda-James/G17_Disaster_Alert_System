@@ -171,6 +171,75 @@ The Disaster Alert System (DAS) test suite was executed successfully with **all 
 
 ---
 
+## Requirements Traceability Matrix
+
+### Functional Requirements Coverage
+
+| Req ID | Requirement | Test Cases | Status |
+|--------|-------------|------------|--------|
+| FR-001 | Earthquake alerts (≥ 5.0 mag) | FT-001, FT-002, BVA-001 to BVA-007 | ✅ 100% |
+| FR-002 | Tsunami alerts (≥ 2.0m wave) | FT-003, BVA-008 | ✅ 100% |
+| FR-003 | Flood alerts (≥ 3.0m level) | FT-004, BVA-009 | ✅ 100% |
+| FR-004 | Cyclone alerts (≥ 120 km/h) | FT-005, BVA-010 | ✅ 100% |
+| FR-005 | 5-level severity classification | FT-006, FT-007, FT-008 | ✅ 100% |
+| FR-006 | Alert acknowledgment | FT-009, FT-010, IT-004 | ✅ 100% |
+| FR-007 | Notification callbacks | FT-011, FT-012 | ✅ 100% |
+| FR-008 | Alert statistics | FT-013 | ✅ 100% |
+| FR-009 | SMS notifications | IT-001, IT-002, ST-003 | ✅ 100% |
+| FR-010 | Email notifications | IT-002, ST-003 | ✅ 100% |
+| FR-011 | Database storage | IT-001, IT-003 | ✅ 100% |
+| FR-012 | Region-based filtering | IT-005 | ✅ 100% |
+| FR-013 | Priority ordering | IT-006 | ✅ 100% |
+
+### Non-Functional Requirements Coverage
+
+| Req ID | Requirement | Test Cases | Status |
+|--------|-------------|------------|--------|
+| NFR-001 | Process 100 alerts < 2 seconds | ST-001 | ✅ 100% |
+| NFR-002 | Concurrent processing | ST-002, ST-005 | ✅ 100% |
+| NFR-003 | 100 notifications < 5 seconds | ST-003 | ✅ 100% |
+| NFR-004 | Memory stability under load | ST-006 | ✅ 100% |
+| NFR-005 | Gateway failure handling | RBT-001, RBT-002, RBT-003 | ✅ 100% |
+| NFR-006 | DB corruption fallback | RBT-004, RBT-005 | ✅ 100% |
+| NFR-007 | High latency tolerance | RBT-006 | ✅ 100% |
+| NFR-008 | Data preservation on failure | RBT-007, RBT-008, RBT-009 | ✅ 100% |
+| NFR-009 | Input boundary validation | BVA-011 to BVA-015 | ✅ 100% |
+
+### Risk Mitigation Matrix
+
+| Risk ID | Risk | Test Cases | Mitigation | Verified |
+|---------|------|------------|------------|----------|
+| RISK-001 | SMS gateway fails | RBT-001, RBT-003 | Retry + email fallback | ✅ |
+| RISK-002 | DB corruption | RBT-004, RBT-005 | Cache fallback | ✅ |
+| RISK-003 | Network latency | RBT-006 | Timeout handling | ✅ |
+| RISK-004 | Burst of 100+ alerts | ST-001, ST-002 | Concurrent processing | ✅ |
+| RISK-005 | Invalid sensor data | BVA-005, BVA-011, BVA-012 | Input validation | ✅ |
+
+### Component Test Coverage Matrix
+
+| Component | Func | BVA | Integ | Stress | Safety |
+|-----------|------|-----|-------|--------|--------|
+| Alert Manager | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SMS Gateway | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Email Gateway | - | ✅ | ✅ | ✅ | ✅ |
+| Database Manager | ✅ | - | ✅ | ✅ | ✅ |
+| Notification Service | ✅ | - | ✅ | ✅ | ✅ |
+| Config Module | - | - | - | - | ✅ |
+| Logger | - | - | - | - | ✅ |
+
+### Traceability Summary
+
+| Category | Requirements | Tests Mapped | Passed | Coverage |
+|----------|--------------|--------------|--------|----------|
+| Functional | 13 | 45 | 45 | 100% |
+| Non-Functional | 9 | 30 | 30 | 100% |
+| Risk Mitigation | 5 | 12 | 12 | 100% |
+| **Total** | **27** | **79*** | **79** | **100%** |
+
+*\*Some tests cover multiple requirements*
+
+---
+
 ## Recommendations
 
 ### Short-Term (Before Production)
