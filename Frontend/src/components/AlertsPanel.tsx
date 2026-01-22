@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, Clock, MapPin, ChevronRight, AlertTriangle } from 'lucide-react';
 import { SeverityBadge } from '@/components/SeverityBadge';
-import { formatDistanceToNow } from 'date-fns';
-import { Alert } from '@/components/Alert'; // <--- Updated Import
+import { formatDistanceToNow, parseISO } from 'date-fns';
+import { Alert } from '@/components/Alert';
 
 interface AlertsPanelProps {
   alerts: Alert[];
@@ -13,13 +13,30 @@ interface AlertsPanelProps {
 export default function AlertsPanel({ alerts = [], onAlertClick }: AlertsPanelProps) {
   const [expandedAlert, setExpandedAlert] = useState<string | null>(null);
 
-  // SAFE GUARD: Ensure alerts is always an array
   const safeAlerts = Array.isArray(alerts) ? alerts : [];
 
-  // Sort Logic with Safety Check
+  // 1. ROBUST PARSER HELPER
+  // Python often sends "+00:00" or uses a space instead of "T".
+  // This cleans it for JavaScript.
+  const parsePythonDate = (dateString: string | undefined) => {
+    if (!dateString) return new Date();
+    
+    // Replace Python's "+00:00" with "Z" (Canonical UTC for JS)
+    // Replace " " with "T" (if Python default string conversion was used)
+    const normalized = dateString.replace('+00:00', 'Z').replace(' ', 'T');
+    
+    // Fallback: If it doesn't end in Z and has no offset, assume UTC
+    const finalString = normalized.endsWith('Z') || normalized.includes('+') 
+      ? normalized 
+      : `${normalized}Z`;
+
+    return parseISO(finalString);
+  };
+
+  // 2. UPDATED SORT LOGIC
   const sortedAlerts = [...safeAlerts].sort((a, b) => {
-    const dateA = new Date(a.timestamp || Date.now());
-    const dateB = new Date(b.timestamp || Date.now());
+    const dateA = parsePythonDate(a.timestamp);
+    const dateB = parsePythonDate(b.timestamp);
     return dateB.getTime() - dateA.getTime();
   });
 
@@ -28,13 +45,15 @@ export default function AlertsPanel({ alerts = [], onAlertClick }: AlertsPanelPr
     if (onAlertClick) onAlertClick(alert);
   };
 
-  // Helper function to prevent Crash
+  // 3. UPDATED DISPLAY FUNCTION
   const getRelativeTime = (dateString: string) => {
     try {
       if (!dateString) return 'Just now';
-      return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+      const date = parsePythonDate(dateString);
+      return formatDistanceToNow(date, { addSuffix: true });
     } catch (error) {
-      return 'Just now'; // Fallback if date format is wrong
+      console.warn("Date parse error:", error); // Helpful for debugging
+      return 'Just now'; 
     }
   };
 
@@ -87,7 +106,7 @@ export default function AlertsPanel({ alerts = [], onAlertClick }: AlertsPanelPr
                     
                     <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                       <Clock className="w-3 h-3 shrink-0" />
-                      {/* USE THE SAFE HELPER HERE */}
+                      {/* Using the updated helper */}
                       <span>{getRelativeTime(alert.timestamp)}</span>
                     </div>
                   </div>

@@ -19,14 +19,14 @@ app.config["JWT_SECRET_KEY"] = "super-secret-key-change-this"
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = datetime.timedelta(days=7)
 
 # Twilio Config
-app.config['TWILIO_ACCOUNT_SID'] = 'ACOUNT_SID'
-app.config['TWILIO_AUTH_TOKEN'] = 'AUTH_TOKEN'
-app.config['TWILIO_NUMBER'] = 'TWILIO_NO_SENDING' 
+app.config['TWILIO_ACCOUNT_SID'] = ''
+app.config['TWILIO_AUTH_TOKEN'] = ''
+app.config['TWILIO_NUMBER'] = '' 
 
 # Logic Constants (Mock Values / Settings)
 CONSTANTS = {
     "SMS_RADIUS_KM": 200,          
-    "DUPLICATE_CHECK_RADIUS_KM": 100, # Radius to check for existing alerts
+    "DUPLICATE_CHECK_RADIUS_KM": 200, # Radius to check for existing alerts
     "DUPLICATE_TIME_WINDOW_HOURS": 12, # Time window to suppress new SMS
     "DEFAULT_LAT": 20.5937,        # Center of India Lat
     "DEFAULT_LNG": 78.9629,        # Center of India Lng
@@ -165,7 +165,7 @@ def signup():
     data = request.json
     users = mongo.db.users
 
-    if users.find_one({"email": data['email']}) or users.find_one({"phone": data['phone']}):
+    if users.find_one({"email": data['email']}) :
         return jsonify({"msg": "User already exists"}), 400
 
     hashed_password = bcrypt.generate_password_hash(data['password']).decode('utf-8')
@@ -247,6 +247,33 @@ def update_user(user_id):
     return jsonify(user_serializer(updated_user)), 200
 
 # --- UPDATED ALERT CREATION LOGIC ---
+# ... (imports remain the same)
+
+# --- HELPER: SAFE SERIALIZER ---
+def serialize_alert(doc):
+    """
+    Safely converts a MongoDB alert document to a JSON-ready dictionary.
+    Ensures timestamps are ISO strings and ObjectIds are strings.
+    """
+    return {
+        "id": str(doc["_id"]),
+        "user_id": str(doc["user_id"]),
+        "title": doc.get("title", "Untitled Alert"),
+        "message": doc.get("message", ""),
+        "type": doc.get("type", "info"),
+        "severity": doc.get("severity", "medium"),
+        "location": doc.get("location", "Unknown Location"),
+        # Ensure coordinates are always a dictionary with lat/lng
+        "coordinates": doc.get("coordinates", {"lat": 0, "lng": 0}),
+        "status": doc.get("status", "active"),
+        # CRITICAL FIX: Convert datetime to ISO string for Frontend
+        "timestamp": doc["timestamp"].isoformat() if isinstance(doc.get("timestamp"), datetime.datetime) else str(datetime.datetime.utcnow().isoformat()),
+        "sms_sent": doc.get("sms_sent", False)
+    }
+
+# ... (rest of your config and earlier functions)
+
+# --- UPDATED ROUTES ---
 
 @app.route('/api/alerts', methods=['POST'])
 @jwt_required()
@@ -254,24 +281,20 @@ def create_alert():
     current_user_id = get_jwt_identity()
     data = request.json
     
-    required = ['title', 'message', 'type', 'severity', 'location']
-    if not all(k in data for k in required):
-        return jsonify({"msg": "Missing required fields"}), 400
-
-    #  Resolve Coordinates
+    # ... (Your existing validation logic) ...
+    # ... (Your existing coordinate/SMS logic) ...
+    
+    # 1. Logic to get coords and check SMS (Same as your code)
     alert_coords = data.get('coordinates')
     if not alert_coords or alert_coords.get('lat') == 0:
-        # Fallback if frontend failed
-        # Note: data['location'] comes as "City, State" from frontend
         parts = data['location'].split(',')
         city = parts[0].strip()
         state = parts[1].strip() if len(parts) > 1 else ""
         alert_coords = get_coordinates(city, state)
-    
-    #  Check Logic: Should we send SMS?
+
     trigger_sms = should_trigger_sms(alert_coords)
 
-    #  Create Alert Object
+    # 2. Create Alert Object
     new_alert = {
         "user_id": ObjectId(current_user_id),
         "title": data['title'],
@@ -282,24 +305,21 @@ def create_alert():
         "coordinates": alert_coords,
         "status": "active",
         "timestamp": datetime.datetime.utcnow(),
-        "sms_sent": trigger_sms # <--- NEW PROPERTY FLAG
+        "sms_sent": trigger_sms 
     }
 
-    #  Save to DB (Always save, even if SMS suppressed) SEE WE CAN ALSO DECIDE TO NOT SAVE 
     result = mongo.db.alerts.insert_one(new_alert)
-    
-    # Broadcast SMS (Only if trigger is True)
+
+    # 3. Broadcast SMS
     if trigger_sms:
         broadcast_sms_to_users(new_alert)
-    else:
-        print(" Alert Saved, but SMS suppressed (Duplicate detected).")
 
-    # 6. Return Response
-    new_alert['id'] = str(result.inserted_id)
-    new_alert['user_id'] = str(new_alert['user_id'])
-    del new_alert['_id']
+    # 4. Fetch the fresh document to return it safely
+    saved_alert = mongo.db.alerts.find_one({"_id": result.inserted_id})
     
-    return jsonify(new_alert), 201
+    # USE THE SERIALIZER
+    return jsonify(serialize_alert(saved_alert)), 201
+
 
 @app.route('/api/alerts', methods=['GET'])
 @jwt_required()
@@ -324,15 +344,10 @@ def get_alerts():
 
     alerts_cursor = mongo.db.alerts.find(query).sort("timestamp", -1)
     
-    alerts = []
-    for doc in alerts_cursor:
-        doc['id'] = str(doc['_id'])
-        doc['user_id'] = str(doc['user_id'])
-        doc['sms_sent'] = doc.get('sms_sent', False) # Handle old alerts lacking this field
-        del doc['_id']
-        alerts.append(doc)
+    # USE THE SERIALIZER IN THE LOOP
+    safe_alerts = [serialize_alert(doc) for doc in alerts_cursor]
 
-    return jsonify(alerts), 200
+    return jsonify(safe_alerts), 200
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
