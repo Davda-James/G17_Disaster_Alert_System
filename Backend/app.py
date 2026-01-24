@@ -12,28 +12,70 @@ from twilio.rest import Client
 from twilio.base.exceptions import TwilioRestException
 import smtplib
 from email.message import EmailMessage
+import logging
+import os
+from logging.handlers import RotatingFileHandler
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
 
+# --- LOGGING CONFIGURATION ---
+logs_dir = "logs"
+if not os.path.exists(logs_dir):
+    os.makedirs(logs_dir)
+
+# Create a custom logger with Backend prefix
+logger = logging.getLogger('BackendLogger')
+logger.setLevel(logging.DEBUG)
+
+# Create rotating file handler
+log_file = os.path.join(logs_dir, 'backend.log')
+handler = RotatingFileHandler(log_file, maxBytes=10485760, backupCount=10)  # 10MB per file, keep 10 backups
+handler.setLevel(logging.DEBUG)
+
+# Create formatter with Backend prefix and timestamp
+formatter = logging.Formatter('Backend-[%(asctime)s] - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+handler.setFormatter(formatter)
+
+# Add handler to logger
+logger.addHandler(handler)
+
+# Suppress sensitive data logging
+def sanitize_log_message(message):
+    """Remove sensitive user data from log messages."""
+    if isinstance(message, str):
+        # Hide email patterns
+        import re
+        message = re.sub(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', '[REDACTED_EMAIL]', message)
+        # Hide phone patterns
+        message = re.sub(r'\+?91\d{10}|\+?\d{10,12}', '[REDACTED_PHONE]', message)
+        # Hide password fields
+        message = re.sub(r'"password"\s*:\s*"[^"]*"', '"password": "[REDACTED]"', message)
+        message = re.sub(r"'password'\s*:\s*'[^']*'", "'password': '[REDACTED]'", message)
+    return message
+
 # --- 1. CONFIGURATION & CONSTANTS ---
-app.config["MONGO_URI"] = "mongodb://localhost:27017/my_database"
-app.config["JWT_SECRET_KEY"] = "super-secret-key-change-this" 
+app.config["MONGO_URI"] = os.getenv("MONGO_URI", "mongodb://localhost:27017/my_database")
+app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "Group-17")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = datetime.timedelta(days=7)
 
 # Twilio Config
-app.config['TWILIO_ACCOUNT_SID'] = ''
-app.config['TWILIO_AUTH_TOKEN'] = ''
-app.config['TWILIO_NUMBER'] = ''
+app.config['TWILIO_ACCOUNT_SID'] = os.getenv("TWILIO_ACCOUNT_SID", "")
+app.config['TWILIO_AUTH_TOKEN'] = os.getenv("TWILIO_AUTH_TOKEN", "")
+app.config['TWILIO_NUMBER'] = os.getenv("TWILIO_NUMBER", "")
 
 # SMTP Config
-app.config['SMTP_HOST'] = ""
-app.config['SMTP_PORT'] = 587
-app.config['SMTP_USER'] = ""
-app.config['SMTP_PASSWORD'] = ""
-app.config['FROM_EMAIL'] = ""
-app.config['SMTP_USE_TLS'] = True
+app.config['SMTP_HOST'] = os.getenv("SMTP_HOST", "")
+app.config['SMTP_PORT'] = int(os.getenv("SMTP_PORT", 587))
+app.config['SMTP_USER'] = os.getenv("SMTP_USER", "")
+app.config['SMTP_PASSWORD'] = os.getenv("SMTP_PASSWORD", "")
+app.config['FROM_EMAIL'] = os.getenv("FROM_EMAIL", "")
+app.config['SMTP_USE_TLS'] = os.getenv("SMTP_USE_TLS", "True").lower() == "true"
 
-# Logic Constants (Mock Values / Settings)
+# Logic Constants (These are Just for the cases when workflow fails and we redirect to some deafault cases)
 CONSTANTS = {
     "SMS_RADIUS_KM": 200,          
     "DUPLICATE_CHECK_RADIUS_KM": 200, # Radius to check for existing alerts
@@ -62,14 +104,16 @@ def get_coordinates(city, state, country="India"):
         data = response.json()
         
         if data and len(data) > 0:
+            logger.info(f"Coordinates fetched for {city}, {state}")
             return {
                 "lat": float(data[0]['lat']),
                 "lng": float(data[0]['lon'])
             }
+        logger.warning(f"No coordinates found for {city}, {state}. Using defaults.")
         return {"lat": CONSTANTS["DEFAULT_LAT"], "lng": CONSTANTS["DEFAULT_LNG"]}
         
     except Exception as e:
-        print(f"Geocoding error: {e}")
+        logger.error(f"Geocoding error: {e}")
         return {"lat": CONSTANTS["DEFAULT_LAT"], "lng": CONSTANTS["DEFAULT_LNG"]}
 
 def user_serializer(user):
@@ -99,9 +143,10 @@ def send_twilio_sms(to_number, title, message_body):
             from_=app.config['TWILIO_NUMBER'],
             to=formatted_number
         )
+        logger.info(f"SMS sent successfully to [REDACTED_PHONE]. Message SID: {message.sid}")
         return {"status": "success", "sid": message.sid}
     except TwilioRestException as e:
-        print(f"Twilio Error for {formatted_number}: {e}")
+        logger.error(f"Twilio Error for [REDACTED_PHONE]: {e}")
         return {"status": "error", "message": str(e)}
 
 def should_trigger_sms(new_alert_coords):
@@ -133,13 +178,14 @@ def should_trigger_sms(new_alert_coords):
                 distance = geodesic(new_point, existing_point).km
                 
                 if distance <= CONSTANTS["DUPLICATE_CHECK_RADIUS_KM"]:
-                    print(f" SMS Suppressed: Similar alert found {distance:.2f}km away.")
+                    logger.info(f"SMS Suppressed: Similar alert found {distance:.2f}km away.")
                     return False # Found a match, DO NOT send SMS
 
+        logger.info(f"SMS check passed - no duplicates found within radius")
         return True # No matching alert found, proceed with SMS
 
     except Exception as e:
-        print(f"Error in suppression logic: {e}")
+        logger.error(f"Error in suppression logic: {e}")
         return True # Fail-safe: Send SMS if check fails
 
 def should_trigger_email(new_alert_coords):
@@ -169,14 +215,15 @@ def should_trigger_email(new_alert_coords):
             distance_km = geodesic(new_point, existing_point).km
 
             if distance_km <= CONSTANTS["DUPLICATE_CHECK_RADIUS_KM"]:
-                print(f" Email Suppressed: Similar alert found {distance_km:.2f} km away.")
+                logger.info(f"Email Suppressed: Similar alert found {distance_km:.2f} km away.")
                 return False
 
+        logger.info(f"Email check passed - no duplicates found within radius")
         return True
 
     except Exception as e:
         # Fail-safe: if suppression check fails, allow sending (avoid silent missed alerts)
-        print(f"Error in email suppression logic: {e}")
+        logger.error(f"Error in email suppression logic: {e}")
         return True
 
 
@@ -187,6 +234,7 @@ def broadcast_sms_to_users(alert_data):
         # 1. Fetch all users
         # Convert cursor to list immediately to avoid cursor exhaustion issues
         all_users = list(mongo.db.users.find({}))
+        logger.info(f"Starting SMS broadcast for alert: {alert_data.get('title', 'Unknown')}")
         
         alert_point = (alert_data['coordinates']['lat'], alert_data['coordinates']['lng'])
         
@@ -203,6 +251,8 @@ def broadcast_sms_to_users(alert_data):
                     if user.get("phone"):
                         recipients.append(user)
 
+        logger.info(f"Found {len(recipients)} users within SMS radius")
+        
         curr_round = 0
         users_to_process = recipients 
         success_count = 0
@@ -213,7 +263,7 @@ def broadcast_sms_to_users(alert_data):
             failed_in_this_round = [] 
             for user in users_to_process:
                 phone = user.get("phone")
-                
+                logger.debug(f"Sending SMS to user [REDACTED_PHONE]")
                 # Send SMS
                 response = send_twilio_sms(phone, alert_data['title'], alert_data['message'])
                 
@@ -225,16 +275,18 @@ def broadcast_sms_to_users(alert_data):
             users_to_process = failed_in_this_round
             curr_round += 1
         
-        print(f" SMS Broadcast Complete: Sent to {success_count} users.")
+        logger.info(f"SMS Broadcast Complete: Sent to {success_count} users.")
         return True
     except Exception as e:
-        print(f" SMS Broadcast Failed: {e}")
+        logger.error(f"SMS Broadcast Failed: {e}")
         return False
     
 def broadcast_email_to_users(alert_data):
     """Iterate users and send email alerts to those within radius and who opted-in."""
     try:
         all_users = list(mongo.db.users.find({}))
+        logger.info(f"Starting email broadcast for alert: {alert_data.get('title', 'Unknown')}")
+        
         alert_point = (alert_data['coordinates']['lat'], alert_data['coordinates']['lng'])
 
         # 1) Build recipient list (respect user notification preferences)
@@ -253,6 +305,8 @@ def broadcast_email_to_users(alert_data):
                     if user.get("email"):
                         recipients.append(user)
 
+        logger.info(f"Found {len(recipients)} users within email radius")
+
         # 2) Retry loop (same logic as broadcast_sms_to_users)
         curr_round = 0
         users_to_process = recipients
@@ -263,6 +317,7 @@ def broadcast_email_to_users(alert_data):
             for user in users_to_process:
                 to_email = user.get("email")
                 try:
+                    logger.debug(f"Sending email to user [REDACTED_EMAIL]")
                     # Build email
                     msg = EmailMessage()
                     msg["Subject"] = f"🚨 {alert_data['title'].upper()} 🚨"
@@ -287,17 +342,17 @@ def broadcast_email_to_users(alert_data):
 
                     success_count += 1
                 except Exception as e:
-                    print(f" Email failed for {to_email}: {e}")
+                    logger.error(f"Email failed for [REDACTED_EMAIL]: {e}")
                     failed_in_this_round.append(user)
 
             users_to_process = failed_in_this_round
             curr_round += 1
 
-        print(f" Email Broadcast Complete: Sent to {success_count} users.")
+        logger.info(f"Email Broadcast Complete: Sent to {success_count} users.")
         return True
 
     except Exception as e:
-        print(f" Email Broadcast Failed: {e}")
+        logger.error(f"Email Broadcast Failed: {e}")
         return False
 
 # --- 3. ROUTES ---
@@ -306,8 +361,11 @@ def broadcast_email_to_users(alert_data):
 def signup():
     data = request.json
     users = mongo.db.users
+    
+    logger.info(f"Signup attempt with email: [REDACTED_EMAIL]")
 
     if users.find_one({"email": data['email']}) :
+        logger.warning(f"Signup failed - user already exists with email: [REDACTED_EMAIL]")
         return jsonify({"msg": "User already exists"}), 400
 
     hashed_password = bcrypt.generate_password_hash(data['password']).decode('utf-8')
@@ -331,6 +389,8 @@ def signup():
     }
 
     result = users.insert_one(new_user)
+    logger.info(f"User created successfully with ID: {result.inserted_id}")
+    
     access_token = create_access_token(identity=str(result.inserted_id))
     created_user = users.find_one({"_id": result.inserted_id})
     
@@ -340,28 +400,42 @@ def signup():
 def login():
     data = request.json
     users = mongo.db.users
+    
+    logger.info(f"Login attempt with email: [REDACTED_EMAIL]")
+    
     user = users.find_one({"email": data['email']})
     
     if user and bcrypt.check_password_hash(user['password'], data['password']):
+        logger.info(f"Login successful for user ID: {user['_id']}")
         access_token = create_access_token(identity=str(user["_id"]))
         return jsonify({ "token": access_token, "user": user_serializer(user) }), 200
     
+    logger.warning(f"Login failed - invalid credentials for email: [REDACTED_EMAIL]")
     return jsonify({"msg": "Invalid email or password"}), 401
 
 @app.route('/api/me', methods=['GET'])
 @jwt_required()
 def get_current_user():
     current_user_id = get_jwt_identity()
+    logger.debug(f"Fetching current user: {current_user_id}")
+    
     user = mongo.db.users.find_one({"_id": ObjectId(current_user_id)})
     if user:
+        logger.debug(f"User found: {current_user_id}")
         return jsonify({"user": user_serializer(user)}), 200
+    
+    logger.warning(f"User not found: {current_user_id}")
     return jsonify({"msg": "User not found"}), 404
 
 @app.route('/api/user/<user_id>', methods=['PUT'])
 @jwt_required()
 def update_user(user_id):
     current_user_id = get_jwt_identity()
+    
+    logger.info(f"Update user request for ID: {user_id}")
+    
     if current_user_id != user_id:
+        logger.warning(f"Unauthorized update attempt - user {current_user_id} tried to update {user_id}")
         return jsonify({"msg": "Unauthorized"}), 403
 
     data = request.json
@@ -384,6 +458,7 @@ def update_user(user_id):
 
     if update_fields:
         users.update_one({"_id": ObjectId(user_id)}, {"$set": update_fields})
+        logger.info(f"User {user_id} updated successfully with fields: {', '.join(update_fields.keys())}")
 
     updated_user = users.find_one({"_id": ObjectId(user_id)})
     return jsonify(user_serializer(updated_user)), 200
@@ -424,8 +499,15 @@ def create_alert():
     current_user_id = get_jwt_identity()
     data = request.json
     
-    # ... (Your existing validation logic) ...
-    # ... (Your existing coordinate/SMS logic) ...
+    # INPUT VALIDATION: Check for required fields
+    required_fields = ['title', 'message', 'type', 'severity', 'location']
+    missing_fields = [field for field in required_fields if field not in data or data[field] is None or (isinstance(data[field], str) and data[field].strip() == "")]
+    
+    if missing_fields:
+        logger.warning(f"Alert creation failed - missing fields: {missing_fields}")
+        return jsonify({"msg": f"Missing required fields: {', '.join(missing_fields)}"}), 400
+    
+    logger.info(f"New alert created by user {current_user_id} - Title: {data.get('title', 'Unknown')}")
     
     # 1. Logic to get coords and check SMS (Same as your code)
     alert_coords = data.get('coordinates')
@@ -437,6 +519,8 @@ def create_alert():
 
     trigger_sms = should_trigger_sms(alert_coords)
     trigger_email = should_trigger_email(alert_coords)
+    
+    logger.debug(f"Alert SMS trigger: {trigger_sms}, Email trigger: {trigger_email}")
 
     # 2. Create Alert Object
     new_alert = {
@@ -454,12 +538,15 @@ def create_alert():
     }
 
     result = mongo.db.alerts.insert_one(new_alert)
+    logger.info(f"Alert {result.inserted_id} created successfully")
 
     # 3. Broadcast SMS and email (first sms)
     if trigger_sms:
+        logger.info("Initiating SMS broadcast")
         broadcast_sms_to_users(new_alert)
 
     if trigger_email:
+        logger.info("Initiating email broadcast")
         broadcast_email_to_users(new_alert)
 
     # 4. Fetch the fresh document to return it safely
@@ -474,6 +561,8 @@ def create_alert():
 def get_alerts():
     time_filter = request.args.get('time', '30d')
     type_filter = request.args.get('type', 'all')
+    
+    logger.debug(f"Fetching alerts - Time filter: {time_filter}, Type filter: {type_filter}")
     
     query = {}
     now = datetime.datetime.utcnow()
@@ -494,8 +583,13 @@ def get_alerts():
     
     # USE THE SERIALIZER IN THE LOOP
     safe_alerts = [serialize_alert(doc) for doc in alerts_cursor]
+    
+    logger.info(f"Retrieved {len(safe_alerts)} alerts")
 
     return jsonify(safe_alerts), 200
 
 if __name__ == '__main__':
+    logger.info("=" * 60)
+    logger.info("DisasterWatch Backend Server Starting")
+    logger.info("=" * 60)
     app.run(debug=True, port=5000)
