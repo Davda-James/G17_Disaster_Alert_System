@@ -1,0 +1,18 @@
+# Test Suite Requirements
+# For testing the DisasterWatch Backend API
+
+# Testing framework
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-xdist>=3.0.0
+
+# Backend dependencies (for import)
+flask>=2.0.0
+flask-pymongo>=2.3.0
+flask-bcrypt>=1.0.1
+flask-jwt-extended>=4.4.0
+flask-cors>=3.0.10
+pymongo>=4.0.0
+geopy>=2.3.0
+twilio>=8.0.0
+requests>=2.28.0

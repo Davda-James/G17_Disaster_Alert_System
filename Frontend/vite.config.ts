@@ -18,4 +18,10 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  test: {
+    globals: true,
+    environment: "jsdom",
+    include: ["../tests/frontend/**/*.{test,spec}.{ts,tsx}"],
+    setupFiles: ["../tests/frontend/setup.ts"],
+  },
 }));
