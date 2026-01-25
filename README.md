@@ -42,7 +42,25 @@
 ---
 
 ## Quick Start
+Create/update `.env` file in project root:
+```env
+# MongoDB (Docker: use 'mongo', Local: use 'localhost')
+MONGO_URI=mongodb://mongo:27017/my_database
 
+# JWT Secret (change in production!)
+JWT_SECRET_KEY=your-secret-key-here
+
+# Twilio (optional, for SMS)
+TWILIO_ACCOUNT_SID=your_sid
+TWILIO_AUTH_TOKEN=your_token
+TWILIO_NUMBER=+1234567890
+
+# SMTP (optional, for email)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your_email@gmail.com
+SMTP_PASSWORD=your_app_password
+```
 ### Option 1: Docker (Recommended)
 ```bash
 # Clone and enter project
