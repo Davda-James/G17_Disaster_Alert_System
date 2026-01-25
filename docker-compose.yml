@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  # MongoDB Service
+  mongo:
+    image: mongo:latest
+    container_name: das_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - das_network
+
+  # Backend Service
+  backend:
+    build: ./Backend
+    container_name: das_backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    depends_on:
+      - mongo
+    networks:
+      - das_network
+
+  # Frontend Service
+  frontend:
+    build: ./Frontend
+    container_name: das_frontend
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    depends_on:
+      - backend
+    networks:
+      - das_network
+
+volumes:
+  mongo_data:
+
+networks:
+  das_network:
+    driver: bridge
