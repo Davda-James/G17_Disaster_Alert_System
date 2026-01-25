@@ -1,0 +1,7 @@
+As the assigned Development Engineer, I requested the system schematic and requirements from the Requirement Engineer. Upon receiving the documentation, I proceeded with designing and implementing the system.
+
+I developed both the frontend and backend of the DAS web application, which includes mobile SMS alert integration. The frontend was implemented using React.js, while the backend was developed using Flask (Python).
+
+To ensure the credibility and requirement compliance of the application, I created a demonstration video showcasing how the system meets the specified requirements. Supporting evidence, including screenshots of relevant chats and commit history, has been attached.
+
+For additional proof of work, you can see the project’s GitHub repository.

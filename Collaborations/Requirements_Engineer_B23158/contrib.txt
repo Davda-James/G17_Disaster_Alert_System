@@ -1,0 +1,5 @@
+As the assigned Requirements Engineer, i first researched around and found out the necessary and compliant Requirements for our system.
+Then i prepared the Requirements Documentation (the /reports/Requirements_doc_G17.pdf) which was followed throughout the project's lifecycle
+
+After that my major part was in ensuring that all the code pieces as well as tests were in place (screenshots of chats and commits attached)
+For more proof-of-work, one can see the Github Repository for this project.

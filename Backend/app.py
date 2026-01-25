@@ -21,7 +21,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # --- 1. CONFIGURATION & CONSTANTS ---
-app.config["MONGO_URI"] = os.getenv("MONGO_URI", "mongodb://localhost:27017/my_database")
+app.config["MONGO_URI"] = os.getenv("MONGO_URI", "mongodb://mongo:27017/my_database")
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "super-secret-key-change-this") 
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = datetime.timedelta(days=7)
 
@@ -45,6 +45,40 @@ mongo = PyMongo(app)
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 CORS(app) 
+
+
+def ensure_admin_user():
+    """Ensure a default admin user exists and is authorized."""
+    try:
+        users = mongo.db.users
+        admin_email = "admin@gov.org"
+        admin_password = os.getenv("ADMIN_PASSWORD", "admin123")
+
+        existing = users.find_one({"email": admin_email})
+        if existing:
+            if not existing.get("isAuthorized", False):
+                users.update_one({"_id": existing["_id"]}, {"$set": {"isAuthorized": True}})
+                print("Updated existing admin to authorized: %s" % admin_email)
+            return
+
+        hashed = bcrypt.generate_password_hash(admin_password).decode('utf-8')
+        coords = {"lat": CONSTANTS["DEFAULT_LAT"], "lng": CONSTANTS["DEFAULT_LNG"]}
+
+        admin_user = {
+            "name": "Admin",
+            "email": admin_email,
+            "password": hashed,
+            "phone": "",
+            "location": {"city": "", "state": "", "country": "India", "coordinates": coords},
+            "isAuthorized": True,
+            "notificationPreferences": {"email": True, "sms": True, "push": True},
+            "created_at": datetime.datetime.utcnow()
+        }
+
+        users.insert_one(admin_user)
+        print("Created default admin user: %s" % admin_email)
+    except Exception as e:
+        print(f"Error ensuring admin user: {e}")
 
 
 def get_coordinates(city, state, country="India"):
@@ -495,4 +529,6 @@ def get_alerts():
     return jsonify(safe_alerts), 200
 
 if __name__ == '__main__':
+    with app.app_context():
+        ensure_admin_user()
     app.run(debug=True, host='0.0.0.0', port=5000)
