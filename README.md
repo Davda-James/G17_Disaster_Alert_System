@@ -2,7 +2,7 @@
 
 **DisasterWatch** is a full-stack, location-based emergency alert system that enables administrators to broadcast disaster alerts (Floods, Earthquakes, Fires) and automatically notifies registered users within a specific radius via SMS and Email, while intelligently suppressing duplicate alerts to prevent notification fatigue.
 
-> **📖 For detailed setup instructions (with Docker and without), see [`reports/User_Guide.pdf`](reports/User_Guide_G17.pdf)**
+> **📖 For detailed setup instructions (with Docker and without), see [`reports/Setup_Guide.pdf`](reports/Setup_Guide_G17.pdf)**
 
 ---
 
@@ -134,9 +134,6 @@ SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your_email@gmail.com
 SMTP_PASSWORD=your_app_password
-
-# Admin Password
-ADMIN_PASSWORD=admin123
 ```
 
 ### 3. Choose Your Setup Method
