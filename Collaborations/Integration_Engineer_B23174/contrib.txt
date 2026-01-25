@@ -1,0 +1,1 @@
+As the integration specialist, I ensured that the end to end project runs smoothly. I created the dockerfiles for backend and frontend and forwarded them to Piyush(lead tester) to push in the github.

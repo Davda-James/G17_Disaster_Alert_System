@@ -403,13 +403,8 @@ pytest -v -s -k "test_ft001"
 pytest --html=reports/test_report.html --self-contained-html
 ```
 
-### 9.2 JUnit XML (for CI/CD)
 
-```cmd
-pytest --junitxml=reports/junit.xml
-```
-
-### 9.3 Coverage Report
+### 9.2 Coverage Report
 
 ```cmd
 pytest --cov=../Backend --cov-report=html:reports/coverage
