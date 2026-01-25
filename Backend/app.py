@@ -1,3 +1,4 @@
+import os
 from flask import Flask, request, jsonify
 from flask_pymongo import PyMongo
 from flask_bcrypt import Bcrypt
@@ -11,17 +12,21 @@ import requests
 from twilio.rest import Client
 from twilio.base.exceptions import TwilioRestException
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 app = Flask(__name__)
 
 # --- 1. CONFIGURATION & CONSTANTS ---
-app.config["MONGO_URI"] = "mongodb://localhost:27017/my_database"
-app.config["JWT_SECRET_KEY"] = "super-secret-key-change-this" 
+app.config["MONGO_URI"] = os.getenv("MONGO_URI", "mongodb://localhost:27017/my_database")
+app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "super-secret-key-change-this") 
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = datetime.timedelta(days=7)
 
 # Twilio Config
-app.config['TWILIO_ACCOUNT_SID'] = ''
-app.config['TWILIO_AUTH_TOKEN'] = ''
-app.config['TWILIO_NUMBER'] = '' 
+app.config['TWILIO_ACCOUNT_SID'] = os.getenv("TWILIO_ACCOUNT_SID", "")
+app.config['TWILIO_AUTH_TOKEN'] = os.getenv("TWILIO_AUTH_TOKEN", "")
+app.config['TWILIO_NUMBER'] = os.getenv("TWILIO_NUMBER", "") 
 
 # Logic Constants (Mock Values / Settings)
 CONSTANTS = {
@@ -350,4 +355,4 @@ def get_alerts():
     return jsonify(safe_alerts), 200
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000)

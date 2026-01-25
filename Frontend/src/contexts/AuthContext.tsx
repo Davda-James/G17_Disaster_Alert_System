@@ -44,7 +44,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Flask runs on port 5000 by default
-const API_URL = 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   // Initialize token directly so it's available immediately on reload
