@@ -205,58 +205,6 @@ The frontend runs on `http://localhost:5173` (or configured port).
 
 ---
 
-## Configuration
-
-### Environment Variables (.env)
-
-The `.env` file in the project root controls all configurations:
-
-```env
-# ===== DATABASE =====
-# Docker: mongodb://mongo:27017/my_database
-# Local:  mongodb://localhost:27017/my_database
-MONGO_URI=mongodb://mongo:27017/my_database
-
-# ===== JWT AUTHENTICATION =====
-JWT_SECRET_KEY=your-super-secret-key-change-this-in-production
-
-# ===== TWILIO SMS NOTIFICATIONS (Optional) =====
-TWILIO_ACCOUNT_SID=AC5b0a6e0be284667f7ddd91a7051ff09
-TWILIO_AUTH_TOKEN=7c590859ac9f1ae4781338ec0de5492c
-TWILIO_NUMBER=+15074764305
-
-# ===== SMTP EMAIL NOTIFICATIONS (Optional) =====
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your_email@gmail.com
-SMTP_PASSWORD=your_app_password
-FROM_EMAIL=alerts@disasterwatch.com
-SMTP_USE_TLS=True
-
-# ===== DEFAULT ADMIN USER =====
-# Auto-created on backend startup
-ADMIN_PASSWORD=admin123
-```
-
-### Key Configuration Notes
-
-| Variable | Purpose | Default |
-|----------|---------|---------|
-| `MONGO_URI` | MongoDB connection string | `mongodb://mongo:27017/my_database` |
-| `JWT_SECRET_KEY` | Secret for JWT token signing | `super-secret-key-change-this` |
-| `TWILIO_ACCOUNT_SID` | Twilio API account ID | (empty) |
-| `TWILIO_AUTH_TOKEN` | Twilio API auth token | (empty) |
-| `TWILIO_NUMBER` | Twilio phone number for sending SMS | (empty) |
-| `SMTP_HOST` | Email server hostname | (empty) |
-| `SMTP_PORT` | Email server port | 587 |
-| `SMTP_USER` | Email account username | (empty) |
-| `SMTP_PASSWORD` | Email account password | (empty) |
-| `ADMIN_PASSWORD` | Default admin user password | `admin123` |
-
-⚠️ **Production Note:** Change `JWT_SECRET_KEY` and `ADMIN_PASSWORD` before deploying!
-
----
-
 ## System Architecture & Data Flow
 
 The system follows a multi-phase approach to handle disaster alerts:
