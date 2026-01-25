@@ -1,0 +1,381 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage{tocloft}
+
+\geometry{margin=1in}
+
+% Colors
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+\definecolor{passgreen}{rgb}{0.2,0.7,0.2}
+\definecolor{failred}{rgb}{0.8,0.2,0.2}
+
+% Code listing style
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{codepurple},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codegreen},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    frame=single
+}
+\lstset{style=mystyle}
+
+% Header/Footer
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{DisasterWatch Test Procedures}
+\lhead{Version 1.0}
+\rfoot{Page \thepage}
+\lfoot{\today}
+
+\title{
+    \vspace{-2cm}
+    \textbf{DisasterWatch System}\\
+    \Large Test Procedure Document\\
+    \vspace{0.5cm}
+    \large Software Engineering Assignment 1
+}
+\author{DAS Development Team}
+\date{January 25, 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Document Version} & 1.0 \\
+\hline
+\textbf{Standard} & IEEE 829 Test Documentation \\
+\hline
+\textbf{Project} & Disaster Alert System (DAS) \\
+\hline
+\textbf{Status} & APPROVED \\
+\hline
+\end{tabular}
+\end{center}
+
+\vspace{1cm}
+
+\tableofcontents
+\newpage
+
+% ===========================================================================
+\section{Overview}
+% ===========================================================================
+
+\subsection{System Under Test}
+
+The DisasterWatch application is a mission-critical disaster alert system consisting of:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Component} & \textbf{Technology} & \textbf{Port} \\
+\hline
+Backend API & Flask (Python) & 5000 \\
+Frontend & React + Vite & 5173 \\
+Database & MongoDB & 27017 \\
+SMS Gateway & Twilio API & N/A \\
+\hline
+\end{tabular}
+\caption{System Components}
+\end{table}
+
+\subsection{Test Categories Summary}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|c|c|l|}
+\hline
+\textbf{Category} & \textbf{Tests} & \textbf{Priority} & \textbf{Description} \\
+\hline
+Boundary Value & 55 & P1-P2 & Input validation \\
+Functional & 12 & P1-P2 & API endpoints \\
+Integration & 6 & P1-P2 & End-to-end flows \\
+Safety & 10 & P1 & Failure modes \\
+Stress & 5 & P1-P2 & Load testing \\
+Frontend & 24 & P2-P3 & UI components \\
+\hline
+\textbf{Total} & \textbf{112} & & \\
+\hline
+\end{tabular}
+\caption{Test Category Summary}
+\end{table}
+
+% ===========================================================================
+\section{Test Environment Setup}
+% ===========================================================================
+
+\subsection{Prerequisites}
+
+Before running tests, ensure you have installed:
+
+\begin{itemize}
+    \item Python 3.9 or higher
+    \item Node.js 18 or higher
+    \item pip (Python package manager)
+    \item npm (Node package manager)
+\end{itemize}
+
+\subsection{Backend Test Setup}
+
+\textbf{Step 1:} Navigate to project directory
+\begin{lstlisting}[language=bash]
+cd d:\Sem6_course\SE\Ass1\DAS_Project
+\end{lstlisting}
+
+\textbf{Step 2:} Install Backend dependencies
+\begin{lstlisting}[language=bash]
+pip install -r Backend\requirements.txt
+\end{lstlisting}
+
+\textbf{Step 3:} Install Test dependencies
+\begin{lstlisting}[language=bash]
+pip install -r tests\backend\requirements.txt
+\end{lstlisting}
+
+% ...
+
+\subsection{Running All Backend Tests}
+
+\textbf{Command:}
+\begin{lstlisting}[language=bash]
+cd d:\Sem6_course\SE\Ass1\DAS_Project\tests\backend
+pytest -v
+\end{lstlisting}
+
+\textbf{Expected Output:}
+\begin{lstlisting}
+============================= test session starts =============================
+platform win32 -- Python 3.11.4, pytest-9.0.2
+collected 88 items
+
+boundary/test_limits.py::TestUserInputBoundaries::test_bva001... PASSED
+functional/test_alerts.py::TestUserAuthentication::test_ft001... PASSED
+...
+============================= 88 passed in 5.63s ==============================
+\end{lstlisting}
+
+\subsection{Running Specific Test Categories}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Category} & \textbf{Command} \\
+\hline
+Boundary Value & \texttt{pytest boundary/test\_limits.py -v} \\
+Functional & \texttt{pytest functional/test\_alerts.py -v} \\
+Integration & \texttt{pytest integration/test\_flow.py -v} \\
+Safety & \texttt{pytest safety/test\_failures.py -v -m safety} \\
+Stress & \texttt{pytest stress/test\_load.py -v -m stress} \\
+\hline
+\end{tabular}
+\caption{Commands for Specific Test Categories}
+\end{table}
+
+\subsection{Running Tests with Coverage}
+
+\begin{lstlisting}[language=bash]
+pytest -v --cov=../Backend --cov-report=html
+\end{lstlisting}
+
+This generates an HTML coverage report in \texttt{htmlcov/index.html}.
+
+% ===========================================================================
+\section{Frontend Tests}
+% ===========================================================================
+
+\subsection{Running All Frontend Tests}
+
+\begin{lstlisting}[language=bash]
+cd d:\Sem6_course\SE\Ass1\DAS_Project\Frontend
+npm run test
+\end{lstlisting}
+
+\textbf{Expected Output:}
+\begin{lstlisting}
+ v src/test/example.test.ts (1 test)
+ v src/test/utils.test.ts (15 tests)
+ v src/test/AuthContext.test.tsx (8 tests)
+
+ Test Files  3 passed (3)
+      Tests  24 passed (24)
+   Duration  2.5s
+\end{lstlisting}
+
+\subsection{Running Tests in Watch Mode}
+
+\begin{lstlisting}[language=bash]
+npm run test:watch
+\end{lstlisting}
+
+% ===========================================================================
+\section{Notification System Testing}
+% ===========================================================================
+
+\subsection{Testing Approach}
+
+The SMS notification system is tested through \textbf{mocking} the Twilio API. No actual SMS messages are sent during testing.
+
+\subsection{Mock Configuration}
+
+\begin{lstlisting}[language=python]
+# Tests mock the Twilio Client
+with patch('app.Client') as mock_client:
+    mock_instance = MagicMock()
+    mock_instance.messages.create.return_value = MagicMock(sid='SM123')
+    mock_client.return_value = mock_instance
+\end{lstlisting}
+
+\subsection{Notification Tests Performed}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Test ID} & \textbf{Description} & \textbf{Validates} \\
+\hline
+FT-009 & SMS triggered for new alert & should\_trigger\_sms() returns True \\
+FT-010 & SMS suppressed for duplicate & should\_trigger\_sms() returns False \\
+IT-003 & SMS to nearby users & Users within 200km receive SMS \\
+IT-006 & Regional distribution & Location-based filtering \\
+RBT-001 & Twilio unavailable & Error handling \\
+ST-002 & Broadcast throughput & 50+ SMS in <10 seconds \\
+\hline
+\end{tabular}
+\caption{SMS Notification Tests}
+\end{table}
+
+\subsection{Notification Logic Diagram}
+
+\begin{verbatim}
+1. New Alert Created
+   |
+   +-- Check: Any SMS sent in area within 12 hours?
+   |   +-- YES -> Suppress SMS (sms_sent = False)
+   |   +-- NO  -> Continue to Step 2
+   |
+   +-- Step 2: Find users within 200km radius
+       |
+       +-- For each user in radius:
+       |   +-- Send SMS via Twilio API
+       |
+       +-- Update alert.sms_sent = True
+\end{verbatim}
+
+% ===========================================================================
+\section{Test Results Summary}
+% ===========================================================================
+
+\subsection{Expected Results}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Test Suite} & \textbf{Expected} & \textbf{Passed} & \textbf{Status} \\
+\hline
+Backend - Boundary & 55 & 55 & \textcolor{passgreen}{PASS} \\
+Backend - Functional & 12 & 12 & \textcolor{passgreen}{PASS} \\
+Backend - Integration & 6 & 6 & \textcolor{passgreen}{PASS} \\
+Backend - Safety & 10 & 10 & \textcolor{passgreen}{PASS} \\
+Backend - Stress & 5 & 5 & \textcolor{passgreen}{PASS} \\
+Frontend & 24 & 24 & \textcolor{passgreen}{PASS} \\
+\hline
+\textbf{TOTAL} & \textbf{112} & \textbf{112} & \textcolor{passgreen}{\textbf{PASS}} \\
+\hline
+\end{tabular}
+\caption{Final Test Results}
+\end{table}
+
+% ===========================================================================
+\section{Quick Reference}
+% ===========================================================================
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Action} & \textbf{Command} \\
+\hline
+Run all backend tests & \texttt{pytest -v} \\
+Run all frontend tests & \texttt{npm run test} \\
+Run with coverage & \texttt{pytest --cov=../Backend} \\
+Run specific category & \texttt{pytest -m safety} \\
+Run single test & \texttt{pytest -k "test\_name"} \\
+Watch mode (frontend) & \texttt{npm run test:watch} \\
+Generate HTML report & \texttt{pytest --html=report.html} \\
+\hline
+\end{tabular}
+\caption{Quick Reference Commands}
+\end{table}
+
+% ===========================================================================
+\section{Troubleshooting}
+% ===========================================================================
+
+\subsection{Common Issues}
+
+\begin{description}
+    \item[Module not found: app] Ensure you're running from the tests directory.
+    \item[pytest command not found] Run \texttt{pip install pytest}.
+    \item[Connection refused to MongoDB] Tests use mocks - MongoDB is not required.
+    \item[Frontend tests failing] Rebuild node\_modules with \texttt{npm install}.
+\end{description}
+
+\subsection{Verbose Error Output}
+
+\begin{lstlisting}[language=bash]
+pytest -v --tb=long
+\end{lstlisting}
+
+% ===========================================================================
+\section{Document Approval}
+% ===========================================================================
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{Role} & \textbf{Name} & \textbf{Signature} & \textbf{Date} \\
+\hline
+Author & Test Engineer & \_\_\_\_\_\_\_\_\_\_ & 2026-01-25 \\
+Reviewer & QA Lead & \_\_\_\_\_\_\_\_\_\_ & \_\_\_\_\_\_\_\_ \\
+Approver & Project Manager & \_\_\_\_\_\_\_\_\_\_ & \_\_\_\_\_\_\_\_ \\
+\hline
+\end{tabular}
+\end{table}
+
+\vspace{1cm}
+\begin{center}
+\textit{--- End of Document ---}
+\end{center}
+
+\end{document}
